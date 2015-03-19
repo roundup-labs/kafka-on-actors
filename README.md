@@ -1,4 +1,4 @@
-Actor-based Kafka producer/consumer message driver for Scala
+Akka Actor based Kafka producer/consumer message driver for Scala
 ===
 
 Supports Kafka 0.8.2

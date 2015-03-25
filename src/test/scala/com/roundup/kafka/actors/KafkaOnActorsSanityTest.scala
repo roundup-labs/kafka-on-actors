@@ -15,15 +15,14 @@ class EchoConsumerActor extends Actor with ActorLogging {
     }
 }
 
-class KafkaOnActorsSanityTest extends KafkaOnActorsTestBase
-{
+class KafkaOnActorsSanityTest extends KafkaOnActorsTestBase {
   val total = 10
-  val topics  = Seq(TopicConfig(Topic, Props[EchoConsumerActor], numWorkers = 1))
+  val topics = Seq(TopicConfig(Topic, Props[EchoConsumerActor], numWorkers = 1))
 
   "This a simple test" should {
     s"print $total messages to the log" in withKafka(topics = topics) { kafka =>
 
-      for { n <- 1 to total } kafka ! (Topic, s"msg-$n")
+      for { n <- 1 to total } kafka ! (Topic, s"msg-$n".getBytes)
 
     }
   }

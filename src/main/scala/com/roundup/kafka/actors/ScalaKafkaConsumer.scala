@@ -2,7 +2,7 @@ package com.roundup.kafka.actors
 
 import java.util.Properties
 
-import kafka.consumer.{Consumer, ConsumerConfig}
+import kafka.consumer.Consumer
 import kafka.utils.Logging
 
 import scala.collection.JavaConverters._
@@ -34,14 +34,19 @@ import scala.util.Try
  * @param autoCommitIntervalMillis
  *        The frequency in ms that the consumer offsets are committed to zookeeper.
  */
-case class ScalaKafkaConsumer(
+case class ConsumerConfig(
     zookeeper: String,
     groupId: String,
     autoOffsetResetToStart: Boolean = true,
     consumerTimeoutMillis: Long = 500,
-    autoCommitIntervalMillis: Long = 10000) extends Logging {
+    autoCommitIntervalMillis: Long = 10000) {
 
-    val props = new Properties() {
+    def validate = {
+        require(zookeeper != null, "null zookeeper")
+        require(groupId != null, "null groupId")
+    }
+
+    def toProperties = new Properties() {
         put("zookeeper.connect", zookeeper)
         put("group.id", groupId)
         put("zookeeper.session.timeout.ms", "5000")                          // ZooKeeper session timeout. If the consumer fails to heartbeat to ZooKeeper for this period of time it is considered dead and a rebalance will occur.
@@ -50,8 +55,15 @@ case class ScalaKafkaConsumer(
         put("consumer.timeout.ms", consumerTimeoutMillis.toString)           // Throw a timeout exception to the consumer if no message is available for consumption after the specified interval (default = -1 - blocking)
         put("auto.offset.reset", if (autoOffsetResetToStart) "smallest" else "largest")
     }
+}
 
-    val consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(props))
+case class ScalaKafkaConsumer(config: ConsumerConfig) extends Logging {
+
+    require(config != null)
+
+    config.validate
+
+    val consumer = Consumer.createJavaConsumerConnector(new kafka.consumer.ConsumerConfig(config.toProperties))
 
     def createMessageStreams(topics: Seq[String]): Map[String, KStream] = {
         type JMap[K,V] = java.util.Map[K, V]

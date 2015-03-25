@@ -33,8 +33,12 @@ class KafkaOnActorsTestBase(_system: ActorSystem)
   }
 
   object KafkaTestDriver {
-    def apply(groupId: String = GroupId, topics: Seq[TopicConfig]): TestActorRef[KafkaDriver] = {
-      val props = Props(new KafkaDriver(ZooKeeper, Brokers, groupId, topics))
+    def apply(groupId: String = GroupId,
+              topics: Seq[TopicConfig],
+              consumerConfig: ConsumerConfig = null,
+              producerConfig: ProducerConfig = null): TestActorRef[KafkaDriver] = {
+
+      val props = Props(new KafkaDriver(ZooKeeper, Brokers, groupId, topics, consumerConfig, producerConfig))
       TestActorRef[KafkaDriver](props)
     }
   }
@@ -45,4 +49,3 @@ class KafkaOnActorsTestBase(_system: ActorSystem)
   }
 
 }
-

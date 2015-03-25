@@ -8,7 +8,6 @@ import kafka.consumer.KafkaStream
  */
 
 object `package` {
-
     type KStream = KafkaStream[Array[Byte], Array[Byte]]
 }
 
@@ -19,18 +18,19 @@ object KafkaDriver {
     def apply(actorSystem: ActorSystem, zookeeper: String, brokers: String, groupId: String, topicConfigs: Seq[TopicConfig]): ActorRef = {
         actorSystem.actorOf(Props(new KafkaDriver(zookeeper, brokers: String, groupId, topicConfigs)))
     }
+
 }
 
 class KafkaDriver(zookeeper: String, brokers: String, groupId: String, topicConfigs: Seq[TopicConfig]) extends BaseKafkaActor {
 
-    val kafkaConsumer = ScalaKafkaConsumer(zookeeper, groupId, true)
+    val kafkaConsumer = ScalaKafkaConsumer(zookeeper, groupId)
     val kafkaProducer = ScalaKafkaProducer(brokers)
 
     val streams: Map[String, KStream] = kafkaConsumer.createMessageStreams(topicConfigs.map(_.topic))
 
     val topicDrivers = for (config <- topicConfigs) yield {
         val props = Props(classOf[KafkaStreamDriver], streams(config.topic), config).withDispatcher("kafka-blocking-dispatcher")
-        context.actorOf(props, name = s"TopicDriver-${config.topic}")
+        context.actorOf(props, name = s"kafka-driver-topic-${config.topic}")
     }
 
     override def receive = {

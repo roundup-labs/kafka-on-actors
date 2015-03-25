@@ -38,7 +38,7 @@ class KafkaOnActorsSanityTest(_system: ActorSystem) extends TestKit(_system) wit
             val driver = KafkaDriver(system, ZooKeeper, Brokers, GroupId, Seq(TopicConfig(topic, Props[EchoConsumerActor], 1)))
 
             for (n <- 1 to 10) {
-                driver !(topic, s"msg-$n")
+                driver ! (topic, s"msg-$n")
             }
 
             expectNoMsg

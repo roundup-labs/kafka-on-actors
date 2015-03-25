@@ -1,6 +1,7 @@
 package com.roundup.kafka.actors
 
 import akka.actor.ActorRef
+import com.roundup.kafka.actors.KafkaStreamDriver.NextMessage
 import kafka.consumer.ConsumerTimeoutException
 
 /**
@@ -14,10 +15,13 @@ case object RequestMessage extends KafkaStreamDriverMessage
 
 case class Message(payload: Array[Byte])
 
+object KafkaStreamDriver {
+    case object NextMessage extends KafkaStreamDriverMessage
+}
+
 private class KafkaStreamDriver(stream: KStream, config: TopicConfig) extends BaseKafkaActor {
 
-    case object NextMessage extends KafkaStreamDriverMessage
-
+    log.debug(s"Creating ${config.numWorkers} actors of type ${config.props}")
     val workers: Seq[ActorRef] = for (n <- 1 to config.numWorkers) yield context.actorOf(config.props)
     val streamIterator = stream.iterator()
 

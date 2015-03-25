@@ -68,18 +68,23 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSeriali
  *
  * @param bufferMemoryBytes
  */
-case class ScalaKafkaProducer(
-    brokers: String,
+
+case class ProducerConfig(
+    brokers: String = null,
     clientId: String = null,
-    synchronously: Boolean = true,
+    synchronously: Boolean = false,
     compress: Boolean = true,
     batchSize: Integer = 16384,
     maxSendRetries: Integer = 2,
     acks: Integer = 1,
     requestTimeoutMillis: Long = 2000,
-    bufferMemoryBytes: Long = 10*1024*1024) extends Logging {
+    bufferMemoryBytes: Long = 10*1024*1024) {
 
-    val props = new Properties() {
+    def validate = {
+        require(brokers != null, "null brokers")
+    }
+
+    def toProperties = new Properties() {
         put("bootstrap.servers", brokers)
         put("buffer.memory", bufferMemoryBytes.toString)                // default=33554432
         put("retries", maxSendRetries.toString)                         // default=0
@@ -92,8 +97,15 @@ case class ScalaKafkaProducer(
         put("producer.type", if(synchronously) "sync" else "async")
         if (clientId != null) put("client.id", clientId)
     }
+}
 
-    val producer = new KafkaProducer[String, Array[Byte]](props)
+case class ScalaKafkaProducer(config: ProducerConfig) extends Logging {
+
+    require(config != null, "null config")
+
+    config.validate
+
+    val producer = new KafkaProducer[String, Array[Byte]](config.toProperties)
 
     def send(topic: String, message: String): Unit = send(topic, message.getBytes("UTF8"))
 

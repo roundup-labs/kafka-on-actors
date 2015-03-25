@@ -37,7 +37,6 @@ class KafkaOnActorsTestBase(_system: ActorSystem)
               topics: Seq[TopicConfig],
               consumerConfig: ConsumerConfig = null,
               producerConfig: ProducerConfig = null): TestActorRef[KafkaDriver] = {
-
       val props = Props(new KafkaDriver(ZooKeeper, Brokers, groupId, topics, consumerConfig, producerConfig))
       TestActorRef[KafkaDriver](props)
     }

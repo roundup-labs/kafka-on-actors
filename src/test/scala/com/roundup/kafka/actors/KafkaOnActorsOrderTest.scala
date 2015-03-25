@@ -22,9 +22,10 @@ class KafkaOnActorsOrderTest extends KafkaOnActorsTestBase {
       val topics = Seq(TopicConfig(Topic, Props(new ProxyConsumerActor(collector.ref)), 1))
 
       val kafka = KafkaTestDriver(topics = topics)
-      for { n <- 1 to total } kafka ! (Topic, s"$n".getBytes)
+      for { n <- 1 to total } kafka ! (Topic, n.toString.getBytes)
 
       collector.expectMsgAllOf( 1 to total : _* )
+      collector.expectNoMsg
     }
   }
 }

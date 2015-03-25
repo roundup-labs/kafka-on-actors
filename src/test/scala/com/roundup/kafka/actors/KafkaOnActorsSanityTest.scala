@@ -24,6 +24,7 @@ class KafkaOnActorsSanityTest extends KafkaOnActorsTestBase {
 
       for { n <- 1 to total } kafka ! (Topic, s"msg-$n".getBytes)
 
+      expectNoMsg
     }
   }
 }

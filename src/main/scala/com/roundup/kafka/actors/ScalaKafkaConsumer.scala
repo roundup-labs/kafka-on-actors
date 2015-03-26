@@ -34,8 +34,8 @@ import scala.collection.JavaConverters._
  *        The frequency in ms that the consumer offsets are committed to zookeeper.
  */
 case class ConsumerConfig(
-    zookeeper: String,
-    groupId: String,
+    zookeeper: String = null,
+    groupId: String = null,
     autoOffsetResetToStart: Boolean = false,
     consumerTimeoutMillis: Long = 500,
     autoCommitIntervalMillis: Long = 10000) {

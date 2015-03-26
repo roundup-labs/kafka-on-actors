@@ -35,9 +35,9 @@ import scala.util.Try
  *        The frequency in ms that the consumer offsets are committed to zookeeper.
  */
 case class ConsumerConfig(
-    zookeeper: String,
-    groupId: String,
-    autoOffsetResetToStart: Boolean = true,
+    zookeeper: String = null,
+    groupId: String = null,
+    autoOffsetResetToStart: Boolean = false,
     consumerTimeoutMillis: Long = 500,
     autoCommitIntervalMillis: Long = 10000) {
 

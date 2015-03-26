@@ -8,7 +8,6 @@ import kafka.consumer.KafkaStream
  */
 
 object `package` {
-
     type KStream = KafkaStream[Array[Byte], Array[Byte]]
 }
 
@@ -16,9 +15,17 @@ case class TopicConfig(topic: String, props: Props, numWorkers: Int)
 
 object KafkaDriver {
 
-    def apply(actorSystem: ActorSystem, zookeeper: String, brokers: String, groupId: String, topicConfigs: Seq[TopicConfig], consumerConfig: ConsumerConfig = null, producerConfig: ProducerConfig = null): ActorRef = {
-        actorSystem.actorOf(Props(new KafkaDriver(zookeeper, brokers: String, groupId, topicConfigs)))
+    def apply(actorSystem: ActorSystem,
+              zookeeper: String,
+              brokers: String,
+              groupId: String,
+              topicConfigs: Seq[TopicConfig],
+              consumerConfig: ConsumerConfig = null,
+              producerConfig: ProducerConfig = null): ActorRef = {
+        val props = Props(new KafkaDriver(zookeeper, brokers, groupId, topicConfigs, consumerConfig, producerConfig))
+        actorSystem.actorOf(props)
     }
+
 }
 
 /**
@@ -38,7 +45,7 @@ class KafkaDriver(
     consumerConfig: ConsumerConfig = null,
     producerConfig: ProducerConfig = null) extends BaseKafkaActor {
 
-    val effectiveConsumerConfig = if (consumerConfig != null) consumerConfig.copy(zookeeper = zookeeper, groupId = groupId) else ConsumerConfig(zookeeper, groupId, true)
+    val effectiveConsumerConfig = if (consumerConfig != null) consumerConfig.copy(zookeeper = zookeeper, groupId = groupId) else ConsumerConfig(zookeeper, groupId)
     val effectiveProducerConfig = if (producerConfig != null) producerConfig.copy(brokers = brokers) else ProducerConfig(brokers)
     val kafkaConsumer = ScalaKafkaConsumer(effectiveConsumerConfig)
     val kafkaProducer = ScalaKafkaProducer(effectiveProducerConfig)
@@ -47,12 +54,12 @@ class KafkaDriver(
 
     val topicDrivers = for (config <- topicConfigs) yield {
         val props = Props(classOf[KafkaStreamDriver], streams(config.topic), config).withDispatcher("kafka-blocking-dispatcher")
-        context.actorOf(props, name = s"TopicDriver-${config.topic}")
+        context.actorOf(props, name = s"kafka-driver-topic-${config.topic}")
     }
 
     override def receive = {
         case (topic: String, payload: Array[Byte]) =>
-            log.debug(s"Received message for topic $topic")
+            log.debug("Received message for topic '{}'.", topic)
             kafkaProducer.send(topic, payload)
     }
 

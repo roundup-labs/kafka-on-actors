@@ -1,7 +1,7 @@
 Akka Actors based Kafka consumer/producer for Scala
 ===
 
-Supports Kafka 0.8.2
+Supports Kafka 0.8.2.1
 
 Concept
 ----

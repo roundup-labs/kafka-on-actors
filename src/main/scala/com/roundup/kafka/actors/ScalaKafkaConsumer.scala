@@ -6,6 +6,7 @@ import kafka.consumer.Consumer
 import kafka.utils.Logging
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 /**
  * Created by Lior Gonnen on 3/16/15.
@@ -73,12 +74,7 @@ case class ScalaKafkaConsumer(config: ConsumerConfig) extends Logging {
     }
 
     def close: Unit = {
-        try {
-            consumer.commitOffsets
-            consumer.shutdown
-        }
-        catch {
-            case e: Exception => error(e)
-        }
+        try { consumer.commitOffsets } catch { case e: Exception => error(e) }
+        try { consumer.shutdown } catch { case e: Exception => error(e) }
     }
 }

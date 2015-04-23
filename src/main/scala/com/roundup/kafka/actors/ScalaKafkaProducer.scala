@@ -3,7 +3,7 @@ package com.roundup.kafka.actors
 import java.util.Properties
 
 import kafka.utils.Logging
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.kafka.clients.producer.{RecordMetadata, Callback, KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
 
 /**
@@ -67,6 +67,14 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSeriali
  *        to the client.
  *
  * @param bufferMemoryBytes
+ *        The total bytes of memory the producer can use to buffer records waiting to be sent to the server.
+ *         If records are sent faster than they can be delivered to the server the producer will either block or throw an exception based on
+ *         the preference specified by block.on.buffer.full.
+ *
+ * @param metadataFetchTimeoutMillis
+ *        he first time data is sent to a topic we must fetch metadata about that topic to know which servers host the topic's partitions.
+ *        This configuration controls the maximum amount of time we will block waiting for the metadata fetch to succeed before throwing an
+ *        exception back to the client.
  */
 
 case class ProducerConfig(
@@ -78,7 +86,8 @@ case class ProducerConfig(
     maxSendRetries: Integer = 2,
     acks: Integer = 1,
     requestTimeoutMillis: Long = 2000,
-    bufferMemoryBytes: Long = 10*1024*1024) {
+    bufferMemoryBytes: Long = 10*1024*1024,
+    metadataFetchTimeoutMillis: Long = 1000) {
 
     def validate = {
         require(brokers != null, "null brokers")
@@ -95,11 +104,13 @@ case class ProducerConfig(
         put("key.serializer", classOf[StringSerializer].getName)
         put("value.serializer", classOf[ByteArraySerializer].getName)
         put("producer.type", if(synchronously) "sync" else "async")
+        put("metadata.fetch.timeout.ms", metadataFetchTimeoutMillis.toString)
+        put("block.on.buffer.full", "false")
         if (clientId != null) put("client.id", clientId)
     }
 }
 
-case class ScalaKafkaProducer(config: ProducerConfig) extends Logging {
+case class ScalaKafkaProducer(config: ProducerConfig) extends Logging with Callback {
 
     require(config != null, "null config")
 
@@ -109,7 +120,11 @@ case class ScalaKafkaProducer(config: ProducerConfig) extends Logging {
 
     def send(topic: String, message: String): Unit = send(topic, message.getBytes("UTF8"))
 
-    def send(topic: String, message: Array[Byte]): Unit = producer.send(new ProducerRecord(topic, message))
+    def send(topic: String, message: Array[Byte]): Unit = producer.send(new ProducerRecord(topic, message), this)
+
+    override def onCompletion(recordMetadata: RecordMetadata, e: Exception): Unit = {
+        if (e != null) logger.error(e.getMessage)
+    }
 
     def close: Unit = {
         try {
